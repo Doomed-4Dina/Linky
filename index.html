@@ -1,141 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iOS GPS Compatibility</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-image: url('https://cdn.unstability.ai/users/f6624cb8-cdb4-4e46-adb4-6567149af7e4/images/15412224-0be4-4e37-9432-b83f475946ea/0.png');
-      background-size: cover;
-      background-position: center;
-      color: white;
-      text-align: center;
-    }
-    #message {
-      font-family: Arial, sans-serif;
-      font-size: 18px;
-      margin-bottom: 20px;
-      padding: 10px;
-      background-color: rgba(0, 0, 0, 0.5);
-      border: 1px solid white;
-      border-radius: 5px;
-    }
-    #console {
-      background-color: rgba(0, 0, 0, 0.7);
-      color: lime;
-      font-family: monospace;
-      padding: 10px;
-      width: 90%;
-      max-width: 600px;
-      height: 200px;
-      overflow-y: auto;
-      border: 1px solid white;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:active {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location on Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
-  <div id="message">Tap the button to start GPS location capture.</div>
-  <button id="startButton">Get GPS Location</button>
-  <div id="console"></div>
+    <h1>Find Your Location on the Map</h1>
+    <button onclick="getLocation()">Get My Location</button>
+    <p id="status"></p>
+    <div id="map"></div>
 
-  <script>
-    const debugConsole = document.getElementById("console");
-    const messageDiv = document.getElementById("message");
-    const startButton = document.getElementById("startButton");
+    <script>
+        let map;
 
-    function logMessage(message) {
-      const timestamp = new Date().toISOString();
-      debugConsole.innerHTML += `[${timestamp}] ${message}<br>`;
-      debugConsole.scrollTop = debugConsole.scrollHeight;
-      console.log(message);
-    }
+        function getLocation() {
+            const status = document.getElementById('status');
 
-    function updateMessage(text) {
-      messageDiv.innerText = text;
-    }
-
-    async function getGPSLocation() {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          logMessage("Geolocation is not supported by this browser.");
-          updateMessage("Your browser does not support GPS.");
-          reject(new Error("Geolocation not supported"));
-          return;
+            if (navigator.geolocation) {
+                status.textContent = "Getting your location...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        status.textContent = `Latitude: ${lat}, Longitude: ${lng}`;
+                        initMap(lat, lng);
+                    },
+                    (error) => {
+                        status.textContent = "Unable to retrieve your location.";
+                        console.error(error);
+                    }
+                );
+            } else {
+                status.textContent = "Geolocation is not supported by your browser.";
+            }
         }
 
-        logMessage("Requesting high-accuracy GPS location...");
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const { latitude, longitude } = position.coords;
-            logMessage(`GPS location acquired: Latitude ${latitude}, Longitude ${longitude}`);
-            updateMessage("GPS location acquired.");
-            resolve(position);
-          },
-          error => {
-            let errorMessage;
-            switch (error.code) {
-              case error.PERMISSION_DENIED:
-                errorMessage = "User denied GPS permission.";
-                break;
-              case error.POSITION_UNAVAILABLE:
-                errorMessage = "GPS position unavailable.";
-                break;
-              case error.TIMEOUT:
-                errorMessage = "GPS request timed out.";
-                break;
-              default:
-                errorMessage = "An unknown error occurred.";
+        function initMap(lat, lng) {
+            const location = [lat, lng];
+            if (!map) {
+                map = L.map('map').setView(location, 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+            } else {
+                map.setView(location, 15);
             }
-            logMessage(`GPS Error: ${errorMessage}`);
-            updateMessage(errorMessage);
-            reject(new Error(errorMessage));
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 20000, // Allow up to 20 seconds for a response
-            maximumAge: 0,
-          }
-        );
-      });
-    }
-
-    async function startLocationCapture() {
-      logMessage("Starting GPS capture...");
-      updateMessage("Please allow location permissions when prompted.");
-      try {
-        const position = await getGPSLocation();
-        const { latitude, longitude } = position.coords;
-        logMessage(`Captured Data: Latitude ${latitude}, Longitude ${longitude}`);
-        updateMessage("GPS data captured successfully.");
-      } catch (error) {
-        logMessage(`Error: ${error.message}`);
-        updateMessage("Failed to capture GPS data. Check permissions.");
-      }
-    }
-
-    startButton.addEventListener("click", () => {
-      startButton.style.display = "none"; // Hide button after it's clicked
-      startLocationCapture();
-    });
-  </script>
+            L.marker(location).addTo(map).bindPopup('You are here!').openPopup();
+        }
+    </script>
 </body>
 </html>
