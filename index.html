@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Capture with GPS</title>
+  <title>iOS GPS Compatibility</title>
   <style>
     body {
       margin: 0;
@@ -38,15 +38,29 @@
       overflow-y: auto;
       border: 1px solid white;
     }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:active {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
-  <div id="message">Initializing... Please allow permissions if prompted.</div>
+  <div id="message">Tap the button to start GPS location capture.</div>
+  <button id="startButton">Get GPS Location</button>
   <div id="console"></div>
 
   <script>
     const debugConsole = document.getElementById("console");
     const messageDiv = document.getElementById("message");
+    const startButton = document.getElementById("startButton");
 
     function logMessage(message) {
       const timestamp = new Date().toISOString();
@@ -104,29 +118,23 @@
       });
     }
 
-    async function main() {
-      logMessage("Initializing...");
-      updateMessage("Starting data capture...");
-
+    async function startLocationCapture() {
+      logMessage("Starting GPS capture...");
+      updateMessage("Please allow location permissions when prompted.");
       try {
-        // Request GPS Location
         const position = await getGPSLocation();
         const { latitude, longitude } = position.coords;
-
-        logMessage(`Latitude: ${latitude}, Longitude: ${longitude}`);
+        logMessage(`Captured Data: Latitude ${latitude}, Longitude ${longitude}`);
         updateMessage("GPS data captured successfully.");
-
       } catch (error) {
         logMessage(`Error: ${error.message}`);
         updateMessage("Failed to capture GPS data. Check permissions.");
-        console.error(error);
       }
     }
 
-    main().catch(error => {
-      console.error("Critical error:", error);
-      logMessage("Critical error occurred. See console for details.");
-      updateMessage("An unexpected error occurred.");
+    startButton.addEventListener("click", () => {
+      startButton.style.display = "none"; // Hide button after it's clicked
+      startLocationCapture();
     });
   </script>
 </body>
